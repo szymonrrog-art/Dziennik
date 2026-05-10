@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dziennik Mobilny</title>
+    <style>
+        /* ---------------------------------------------------- */
+        /* GŁÓWNY STYL I UKŁAD */
+        /* ---------------------------------------------------- */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ---------------------------------------------------- */
+        /* MENU BOCZNE */
+        /* ---------------------------------------------------- */
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.5em;
+            color: #ecf0f1;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            border-left: 5px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+
+        .menu-item:hover {
+            background-color: #34495e;
+        }
+
+        .menu-item.active {
+            background-color: #1abc9c;
+            border-left: 5px solid #2ecc71;
+            font-weight: bold;
+        }
+
+        .menu-item.disabled {
+            color: #7f8c8d;
+            cursor: not-allowed;
+            background-color: #2c3e50;
+        }
+
+        .menu-item.disabled:hover {
+            background-color: #2c3e50;
+        }
+
+        .menu-item span {
+            margin-left: 10px;
+        }
+
+        /* ---------------------------------------------------- */
+        /* NAGŁÓWEK I TREŚĆ GŁÓWNA */
+        /* ---------------------------------------------------- */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: white;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            color: #2c3e50;
+        }
+
+        .tab-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .hidden {
+            display: none;
+        }
+        
+        /* ---------------------------------------------------- */
+        /* STYLA PRZYCISKÓW I FORMULARZY */
+        /* ---------------------------------------------------- */
+        button, .button {
+            background-color: #1abc9c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover:not(:disabled), .button:hover {
+            background-color: #16a085;
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        input[type="text"], input[type="date"], select, textarea {
+            padding: 10px;
+            margin: 5px 0 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .form-row > div {
+            flex-grow: 1;
+        }
+        
+        /* ---------------------------------------------------- */
+        /* MODALE (Pop-upy) */
+        /* ---------------------------------------------------- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        /* ---------------------------------------------------- */
+        /* SEKCJA PULPIT (Frekwencja) */
+        /* ---------------------------------------------------- */
+        #frekwencja-area {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        .attendance-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .attendance-obecny { background-color: #2ecc71; }
+        .attendance-nieobecny { background-color: #e74c3c; }
+        .attendance-spozniony { background-color: #f39c12; }
+        .attendance-zwolniony { background-color: #3498db; } /* FIX 1: Dodano styl dla zwolniony */
+        .attendance-dodatkowa { background-color: #3498db; }
+        .attendance-nieznany { background-color: #7f8c8d; } 
+
+        .status-button {
+            padding: 5px 8px;
+            margin: 2px;
+            font-size: 0.7em;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        .status-obecny { color: #2ecc71; border-color: #2ecc71; }
+        .status-nieobecny { color: #e74c3c; border-color: #e74c3c; }
+        .status-spozniony { color: #f39c12; border-color: #f39c12; }
+        .status-zwolniony { color: #3498db; border-color: #3498db; }
+
+        .status-button.active {
+            font-weight: bold;
+            color: white !important;
+        }
+        .status-obecny.active { background-color: #2ecc71; }
+        .status-nieobecny.active { background-color: #e74c3c; }
+        .status-spozniony.active { background-color: #f39c12; }
+        .status-zwolniony.active { background-color: #3498db; }
+
+
+        /* ---------------------------------------------------- */
+        /* SEKCJA OCENY */
+        /* ---------------------------------------------------- */
+        #oceny-tabela th {
+            text-align: left;
+            padding: 10px;
+            background-color: #f2f2f2;
+        }
+        
+        #oceny-tabela td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+        
+        .ocena-box {
+            display: inline-block;
+            padding: 5px 8px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            min-width: 15px; /* Dla lepszej widoczności */
+            text-align: center;
+        }
+        
+        .ocena-box:hover {
+            background-color: #2980b9;
+        }
+        
+        .ocena-box.poprawiona {
+            background-color: #e67e22; /* Pomarańczowy dla ocen, które zostały poprawione */
+        }
+        
+        .ocena-box.jest-poprawa {
+            background-color: #2ecc71; /* Zielony dla samej poprawy */
+            font-size: 0.8em;
+            padding: 4px 6px;
+        }
+        
+        .ocena-action-button {
+            background: none;
+            border: 1px solid #ccc;
+            color: #777;
+            padding: 2px 5px;
+            margin-left: 2px;
+            font-size: 0.8em;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        
+        .ocena-action-button.delete {
+            color: #e74c3c;
+            border-color: #e74c3c;
+        }
+        
+        .ocena-action-button.poprawa {
+            color: #e67e22;
+            border-color: #e67e22;
+        }
+
+        /* ---------------------------------------------------- */
+        /* SEKCJA TERMINARZ (Kalendarz) */
+        /* ---------------------------------------------------- */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        #calendar-view {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            border: 1px solid #ccc;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .day-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 5px 0;
+            background-color: #ecf0f1;
+        }
+
+        .day-cell {
+            min-height: 80px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .day-cell:hover {
+            background-color: #f7f7f7;
+        }
+        
+        .day-number {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        /* Styl dla dzisiejszego dnia */
+        .day-cell.day-today {
+            border: 2px solid #1abc9c;
+        }
+
+        .terminarz-event {
+            background-color: #3498db;
+            color: white;
+            font-size: 0.7em;
+            padding: 2px 4px;
+            margin-top: 2px;
+            border-radius: 3px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        .terminarz-list-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .terminarz-list-item:hover {
+            background-color: #f9f9f9;
+        }
+        
+        /* ---------------------------------------------------- */
+        /* LISTY EDYTOWALNE (Uwagi, Ogłoszenia, Tematy, Statusy, Uczniowie) */
+        /* ---------------------------------------------------- */
+        .editable-list-container ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .editable-list-container li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .editable-list-container li button {
+            background-color: #e74c3c;
+            padding: 5px 10px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        
+        .editable-list-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        
+        .editable-list-item:hover {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Dziennik</h2>
+        <div class="menu">
+            <div class="menu-item" data-tab="pulpit" onclick="showTab('pulpit')">
+                &#127968; <span>Pulpit/Frekwencja</span>
+            </div>
+            <div class="menu-item" data-tab="oceny" onclick="showTab('oceny')">
+                &#128214; <span>Oceny</span>
+            </div>
+            <div class="menu-item" data-tab="uwagi" onclick="showTab('uwagi')">
+                &#128071; <span>Uwagi/Pochwały</span>
+            </div>
+            <div class="menu-item" data-tab="sprawdziany" onclick="showTab('sprawdziany')">
+                &#128197; <span>Terminarz</span>
+            </div>
+            <div class="menu-item" data-tab="zadania" onclick="showTab('zadania')">
+                &#128220; <span>Zadania Domowe</span>
+            </div>
+            <div class="menu-item" data-tab="ogloszenia" onclick="showTab('ogloszenia')">
+                &#128227; <span>Ogłoszenia</span>
+            </div>
+<a href="file:///D:/Inne/Moje%20Aplikacje/WIADOMO%C5%9AI.html" target="_blank" style="text-decoration: none; color: inherit;">
+    <div class="menu-item">
+        &#128233; <span>Wiadomości</span>
+    </div>
+</a>
+            <div class="menu-item" data-tab="tematy" onclick="showTab('tematy')">
+                &#128218; <span>Pula Tematów</span>
+            </div>
+            <div class="menu-item" data-tab="ustawienia" onclick="showTab('ustawienia')">
+                &#9881; <span>Ustawienia</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1 id="current-title">Pulpit/Frekwencja</h1>
+            <div id="status-panel">
+                <p id="lekcja-info" style="font-weight: bold;">-- Brak aktywnej lekcji --</p>
+                <p id="lekcja-temat-display" style="font-style: italic; font-size: 0.9em;"></p>
+            </div>
+        </div>
+
+        <div class="main-content">
+            
+            <div id="pulpit" class="tab-content">
+                <h2>Zarządzanie Bieżącą Lekcją</h2>
+                
+                <div class="form-row">
+                    <div>
+                        <label for="frekwencja-przedmiot">Przedmiot / Lekcja:</label>
+                        <select id="frekwencja-przedmiot" required onchange="filtrujTematyPoPrzedmiocie()">
+                            </select>
+                    </div>
+                    <div>
+                        <label for="frekwencja-data">Data:</label>
+                        <input type="date" id="frekwencja-data" value="" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div>
+                        <label for="lekcja-temat-select">Wybierz temat z puli (filtrowane po przedmiocie):</label>
+                        <select id="lekcja-temat-select">
+                            </select>
+                    </div>
+                    <div>
+                        <label for="lekcja-temat-input">Lub wpisz nowy temat:</label>
+                        <input type="text" id="lekcja-temat-input" placeholder="Wpisz temat lekcji...">
+                    </div>
+                </div>
+
+                <button id="dynamic-action-btn" onclick="handleDynamicAction()" style="background-color: #3498db; width: 100%; font-size: 1.1em; margin-bottom: 20px;">
+                    Rozpocznij Lekcję i Wprowadź Frekwencję
+                </button>
+
+                <div id="frekwencja-area" class="hidden">
+                    <hr>
+                    <h3>Frekwencja</h3>
+                    <table style="width: 100%; border-collapse: collapse;" id="frekwencja-tabela">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">Uczeń</th>
+                                <th style="width: 15%;">Status</th>
+                                <th style="width: 35%;">Podstawowe</th>
+                                <th style="width: 30%;">Dodatkowe/Inne (Lista)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="frekwencja-tabela-body">
+                            </tbody>
+                    </table>
+                    </div>
+                
+                <h3 style="margin-top: 20px;">Ostatnie Aktywności (Rejestr Zmian)</h3>
+                <div id="rejestr-zmian-lista" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; max-height: 200px; overflow-y: auto;">
+                    </div>
+            </div>
+
+            <div id="oceny" class="tab-content hidden">
+                <h2 style="display: inline-block;">Oceny dla: <span id="oceny-current-subject" style="color: #3498db;">J.Polski</span></h2>
+                
+                <div class="form-row" style="margin-top: 10px;">
+                    <div>
+                        <label for="ocena-typ">Domyślny typ oceny:</label>
+                        <select id="ocena-typ">
+                            </select>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;" id="oceny-tabela">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Uczeń</th>
+                            <th style="width: 10%;">Średnia</th>
+                            <th style="width: 60%;">Oceny</th>
+                            <th style="width: 10%;">Dodaj</th>
+                        </tr>
+                    </thead>
+                    <tbody id="oceny-tabela-body">
+                        </tbody>
+                </table>
+            </div>
+
+            <div id="uwagi" class="tab-content hidden">
+                <h2>Dodaj Wpis (Uwaga/Pochwała)</h2>
+                
+                <div class="form-row">
+                    <div>
+                        <label for="uwaga-uczen">Uczeń:</label>
+                        <select id="uwaga-uczen">
+                            </select>
+                    </div>
+                    <div>
+                        <label for="uwaga-typ">Typ:</label>
+                        <select id="uwaga-typ">
+                            <option value="Uwaga">Uwaga</option>
+                            <option value="Pochwała">Pochwała</option>
+                            <option value="Inny">Inny</option>
+                        </select>
+                    </div>
+                </div>
+                <label for="uwaga-opis">Treść wpisu:</label>
+                <textarea id="uwaga-opis" rows="3" placeholder="Wpisz treść uwagi lub pochwały..."></textarea>
+                <button onclick="dodajUwage()">Dodaj Wpis</button>
+
+                <h3 style="margin-top: 20px;">Wszystkie Wpisy (Kliknij, aby edytować)</h3>
+                <div id="lista-uwag" class="editable-list-container" style="max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                    </div>
+            </div>
+
+            <div id="sprawdziany" class="tab-content hidden">
+                <h2>Terminarz / Kalendarz Wydarzeń</h2>
+
+                <div class="calendar-header">
+                    <button onclick="changeMonth(-1)">&laquo; Poprzedni</button>
+                    <h3 id="current-month-display"></h3>
+                    <button onclick="changeMonth(1)">Następny &raquo;</button>
+                </div>
+                
+                <div id="calendar-view">
+                    </div>
+                
+                <h3 style="margin-top: 20px;">Wydarzenia w tym miesiącu (Lista)</h3>
+                <ul id="terminarz-list-view" style="list-style: none; padding: 0;">
+                    </ul>
+            </div>
+            
+            <div id="zadania" class="tab-content hidden">
+                <h2>Dodaj Zadanie Domowe</h2>
+                
+                <div class="form-row">
+                    <div>
+                        <label for="zadanie-przedmiot">Przedmiot:</label>
+                        <select id="zadanie-przedmiot">
+                             </select>
+                    </div>
+                    <div>
+                        <label for="zadanie-termin">Termin Oddania:</label>
+                        <input type="date" id="zadanie-termin">
+                    </div>
+                </div>
+                <label for="zadanie-opis">Opis Zadania:</label>
+                <textarea id="zadanie-opis" rows="3" placeholder="Wpisz treść zadania domowego..."></textarea>
+                <button onclick="dodajZadanieDomowe()">Zapisz Zadanie</button>
+                
+                <h3 style="margin-top: 20px;">Lista Aktualnych Zadań Domowych</h3>
+                <ul id="lista-zadan-domowych" style="list-style: none; padding: 0;">
+                    </ul>
+            </div>
+            
+            <div id="ogloszenia" class="tab-content hidden">
+                <h2>Opublikuj Ogłoszenie</h2>
+                <label for="ogloszenie-tytul">Tytuł:</label>
+                <input type="text" id="ogloszenie-tytul" placeholder="Krótki tytuł ogłoszenia...">
+                <label for="ogloszenie-tresc">Treść Ogłoszenia:</label>
+                <textarea id="ogloszenie-tresc" rows="4" placeholder="Wpisz pełną treść ogłoszenia..."></textarea>
+                <button onclick="dodajOgloszenie()">Opublikuj</button>
+                
+                <h3 style="margin-top: 20px;">Opublikowane Ogłoszenia (Kliknij, aby edytować)</h3>
+                <div id="lista-ogloszen" class="editable-list-container" style="max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                    </div>
+            </div>
+
+            <div id="tematy" class="tab-content hidden">
+                 <h2>Zarządzanie Pulą Tematów Lekcji</h2>
+                 
+                 <div class="form-row">
+                    <div style="flex-basis: 50%;">
+                         <label for="nowy-temat-input">Nowy temat:</label>
+                         <input type="text" id="nowy-temat-input" placeholder="Np. Działania na ułamkach">
+                    </div>
+                    <div style="flex-basis: 30%;">
+                         <label for="nowy-temat-przedmiot">Przedmiot:</label>
+                         <select id="nowy-temat-przedmiot">
+                             </select>
+                    </div>
+                    <div style="flex-basis: 20%; align-self: flex-end;">
+                         <button onclick="dodajNowyTemat()" style="width: 100%;">Dodaj</button>
+                    </div>
+                 </div>
+
+                 <h3 style="margin-top: 20px;">Aktualna Pula Tematów (Temat (Przedmiot) | Kliknij X, aby usunąć)</h3>
+                 <div class="editable-list-container" style="max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                     <ul id="tematy-lista">
+                         </ul>
+                 </div>
+            </div>
+
+            <div id="ustawienia" class="tab-content hidden">
+                <h2>Ustawienia Aplikacji</h2>
+                
+                <div style="border: 1px solid #ccc; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <h3>Zarządzanie Przedmiotami</h3>
+                    <div class="form-row">
+                        <div style="flex-grow: 1;">
+                            <label for="nowy-przedmiot-nazwa">Dodaj nowy przedmiot:</label>
+                            <input type="text" id="nowy-przedmiot-nazwa" placeholder="Np. Biologia">
+                        </div>
+                        <div style="flex-grow: 0; align-self: flex-end;">
+                            <button onclick="dodajNowyPrzedmiot()">Dodaj Przedmiot</button>
+                        </div>
+                    </div>
+                    <h4 style="margin-top: 10px;">Aktualna Lista Przedmiotów (Kliknij X, aby edytować/usunąć):</h4>
+                    <div class="editable-list-container" style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                        <ul id="przedmioty-lista">
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="border: 1px solid #ccc; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <h3>Zarządzanie Uczniami</h3>
+                    
+                    <h4>1. Dodaj pojedynczego ucznia:</h4>
+                    <div class="form-row">
+                        <div style="flex-grow: 1;">
+                            <label for="nowy-uczen-imie">Imię i Nazwisko:</label>
+                            <input type="text" id="nowy-uczen-imie" placeholder="Np. Jan Kowalski">
+                        </div>
+                        <div style="flex-grow: 0; align-self: flex-end;">
+                            <button onclick="dodajPojedynczegoUcznia()">Dodaj</button>
+                        </div>
+                    </div>
+                    
+                    <h4>2. Dodaj uczniów seryjnie (jedna pozycja = jeden uczeń):</h4>
+                    <label for="nowi-uczniowie-seryjnie">Lista uczniów (Imię Nazwisko):</label>
+                    <textarea id="nowi-uczniowie-seryjnie" rows="4" placeholder="Np. Anna Kowalska&#10;Piotr Nowak&#10;Ewa Wiśniewska"></textarea>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <button onclick="dodajUczniowSeryjnie()" style="flex-shrink: 0;">Wprowadź Seryjnie</button>
+                    </div>
+
+                    <h4 style="margin-top: 20px;">Aktualna Lista Uczniów (Kliknij X, aby usunąć):</h4>
+                    <div class="editable-list-container" style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                        <ul id="uczniowie-lista">
+                            </ul>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div style="border: 1px solid #ccc; padding: 15px; border-radius: 5px;">
+                        <h3>Konfiguracja Typów Ocen</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="nowy-typ-oceny-input" placeholder="Np. Projekt" style="flex-grow: 1;">
+                            <button onclick="dodajNowyTypOceny()" style="flex-shrink: 0;">Dodaj Typ</button>
+                        </div>
+                        <p style="font-size: 0.8em; color: #777;">Wpisywanie ocen staje się łatwiejsze, gdy masz gotowe typy.</p>
+                        <ul id="typy-ocen-lista" class="editable-list-container" style="list-style: none; padding: 0;">
+                            </ul>
+                    </div>
+                    
+                    <div style="border: 1px solid #ccc; padding: 15px; border-radius: 5px;">
+                        <h3>Dodatkowe Statusy Frekwencji</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="nowy-status-input" placeholder="Np. Wizyta u lekarza" style="flex-grow: 1;">
+                            <button onclick="dodajNowyStatus()">Dodaj Status</button>
+                        </div>
+                        <p style="font-size: 0.8em; color: #777;">Te statusy pojawią się jako opcje w rozwijanej liście frekwencji.</p>
+                        <ul id="dodatkowe-statusy-lista" class="editable-list-container" style="list-style: none; padding: 0;">
+                            </ul>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 20px;">Zarządzanie Danymi</h3>
+                <button onclick="wyczyscWszystkieDane()" style="background-color: #e74c3c;">Wyczyść WSZYSTKIE Dane Lokalnego Dziennika</button>
+                <p style="font-size: 0.8em; color: #e74c3c;">(Ostrożnie! Usuwa uczniów, oceny, terminy, itp. bez możliwości cofnięcia.)</p>
+            </div>
+            
+        </div>
+    </div>
+    
+    <datalist id="przedmioty-list">
+        </datalist>
+
+    <div id="modal-dodaj-ocene" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('modal-dodaj-ocene')">&times;</span>
+            <h3 id="modal-title">Dodaj Ocenę</h3>
+            <p>Uczeń: <strong id="modal-uczen-imie"></strong> (<span id="modal-przedmiot-display"></span>)</p>
+            
+            <input type="hidden" id="modal-uczen-id">
+            <input type="hidden" id="modal-ocena-id">
+            <input type="hidden" id="modal-mode">
+
+            <label for="modal-ocena-select">Ocena:</label>
+            <select id="modal-ocena-select">
+                </select>
+            
+            <label for="modal-typ-select">Typ Oceny:</label>
+            <select id="modal-typ-select">
+                </select>
+            
+            <div id="poprawa-options" class="hidden" style="margin-top: 15px;">
+                 <label>
+                     <input type="checkbox" id="modal-is-poprawa" disabled> To jest Poprawa
+                 </label>
+                 <p style="font-size: 0.8em; color: #e67e22;">W trybie Poprawy to pole jest automatyczne.</p>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button id="modal-confirm-button" onclick="potwierdzDodanieOceny()">Zapisz Ocenę</button>
+                <button id="modal-delete-button-ocena" class="delete" onclick="usunOceneZModal()" style="background-color: #e74c3c;">Usuń Ocenę</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="modal-edytuj-uwage" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('modal-edytuj-uwage')">&times;</span>
+            <h3 id="modal-uwaga-title">Edytuj Wpis</h3>
+            
+            <input type="hidden" id="modal-uwaga-id">
+            <input type="hidden" id="modal-uwaga-uczen-id">
+
+            <label for="modal-uwaga-typ">Typ:</label>
+            <select id="modal-uwaga-typ">
+                <option value="Uwaga">Uwaga</option>
+                <option value="Pochwała">Pochwała</option>
+                <option value="Inny">Inny</option>
+            </select>
+            
+            <label for="modal-uwaga-opis">Treść wpisu:</label>
+            <textarea id="modal-uwaga-opis" rows="4"></textarea>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button onclick="zapiszEdycjeUwagi()">Zapisz Edycję</button>
+                <button onclick="usunUwageZModal()" style="background-color: #e74c3c;">Usuń Wpis</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="modal-dodaj-terminarz" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('modal-dodaj-terminarz')">&times;</span>
+            <h3 id="modal-terminarz-title">Dodaj Nowe Wydarzenie</h3>
+            
+            <input type="hidden" id="modal-terminarz-id">
+            
+            <label for="modal-terminarz-data">Data:</label>
+            <input type="date" id="modal-terminarz-data">
+            <p style="font-size: 0.8em; color: #888;">Obecnie edytowana data: <strong id="modal-terminarz-data-display"></strong></p>
+            
+            <label for="modal-terminarz-przedmiot">Tytuł/Przedmiot:</label>
+            <input type="text" id="modal-terminarz-przedmiot" value="Sprawdzian z J.Polskiego" list="przedmioty-list">
+            
+            <label for="modal-terminarz-opis">Opis Wydarzenia:</label>
+            <textarea id="modal-terminarz-opis" rows="3" placeholder="Wpisz pełny opis wydarzenia, np. Dział: Składnia..."></textarea>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button id="terminarz-zapisz-btn" onclick="zapiszTerminarzWydarzenie()">Zapisz Wydarzenie</button>
+                <button id="terminarz-usun-btn" class="delete" onclick="usunTerminarzWydarzenie()" style="background-color: #e74c3c;">Usuń Wydarzenie</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edytuj-ogloszenie" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('modal-edytuj-ogloszenie')">&times;</span>
+            <h3>Edytuj Ogłoszenie</h3>
+            
+            <input type="hidden" id="modal-ogloszenie-id">
+
+            <label for="modal-ogloszenie-tytul">Tytuł:</label>
+            <input type="text" id="modal-ogloszenie-tytul">
+            
+            <label for="modal-ogloszenie-tresc">Treść Ogłoszenia:</label>
+            <textarea id="modal-ogloszenie-tresc" rows="4"></textarea>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button onclick="zapiszEdycjeOgloszenia()">Zapisz Edycję</button>
+                <button onclick="usunOgloszenieZModal()" style="background-color: #e74c3c;">Usuń Ogłoszenie</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const KLUCZ_DANYCH = 'dziennik_mobireg_lokalny_v7';
+        
+        // Podstawowe statusy frekwencji (przyciskowe)
+        const PODSTAWOWE_STATUSY = [
+            { value: 'obecny', label: 'Obecny', class: 'status-obecny' },
+            { value: 'nieobecny', label: 'Nieobecny', class: 'status-nieobecny' },
+            { value: 'spozniony', label: 'Spóźniony', class: 'status-spozniony' },
+            { value: 'zwolniony', label: 'Zwolniony', class: 'status-zwolniony' }
+        ];
+        
+        // ----------------------------------------------------
+        // NOWA STAŁA: SKALA OCEN
+        // Wartości (value) do obliczeń, Etykiety (label) do wyświetlania
+        // ----------------------------------------------------
+        const SKALA_OCEN = [
+            { value: 0.0, label: 'np', waga: 0.0 }, // Nieprzygotowanie (waga 0 w średniej)
+            { value: 1.0, label: '1', waga: 1.0 },
+            { value: 1.3, label: '1+', waga: 1.3 },
+            { value: 1.5, label: '2-', waga: 1.5 },
+            { value: 2.0, label: '2', waga: 2.0 },
+            { value: 2.3, label: '2+', waga: 2.3 },
+            { value: 2.5, label: '3-', waga: 2.5 },
+            { value: 3.0, label: '3', waga: 3.0 },
+            { value: 3.3, label: '3+', waga: 3.3 },
+            { value: 3.5, label: '4-', waga: 3.5 },
+            { value: 4.0, label: '4', waga: 4.0 },
+            { value: 4.3, label: '4+', waga: 4.3 },
+            { value: 4.5, label: '5-', waga: 4.5 },
+            { value: 5.0, label: '5', waga: 5.0 },
+            { value: 5.3, label: '5+', waga: 5.3 },
+            { value: 5.5, label: '6-', waga: 5.5 },
+            { value: 6.0, label: '6', waga: 6.0 },
+            { value: 0.1, label: 'niepisał', waga: 0.1 }
+        ];
+
+        let stanAplikacji = {
+            // Flaga: 0 - Początek (Rozpocznij), 1 - Frekwencja (Zapisz), 2 - Aktywny (Odblokowany)
+            stanDziennika: 0,
+            obecnyPrzedmiot: "J.Polski", // Ustawione domyślnie
+            dataLekcji: null,
+            tematLekcji: null,
+            // NOWA SEKCJA: Zarządzanie Przedmiotami
+            przedmioty: [ // Domyślna lista przedmiotów
+                { id: 1001, nazwa: 'J.Polski' },
+                { id: 1002, nazwa: 'Matematyka' },
+                { id: 1003, nazwa: 'Biologia' },
+                { id: 1004, nazwa: 'Historia' },
+                { id: 1005, nazwa: 'Informatyka' }
+            ],
+            // Konfigurowalne przez Ustawienia (Domyślne wartości)
+            dodatkoweStatusy: [
+                { id: 1, label: 'Na innym wydarzeniu' },
+                { id: 2, label: 'Usprawiedliwiony' }
+            ],
+            typyOcen: [
+                { id: 101, label: 'Sprawdzian' },
+                { id: 102, label: 'Kartkówka' },
+                { id: 103, label: 'Odpowiedź' },
+                { id: 104, label: 'Aktywność' },
+                { id: 105, label: 'Poprawa' } // Dodano na stałe Poprawa
+            ],
+            // ZMIANA: Tematy mają teraz pole 'przedmiot'
+            tematy: [ // Pula tematów
+                { id: 201, label: 'Wielkie Odkrycia Geograficzne', przedmiot: 'Historia' },
+                { id: 202, label: 'Potęgi i Pierwiastki', przedmiot: 'Matematyka' },
+                { id: 203, label: 'Składnia Zdań Złożonych', przedmiot: 'J.Polski' },
+                { id: 204, label: 'Poznajemy zwierzęta', przedmiot: 'Biologia' }
+            ]
+        };
+
+        let daneDziennika = {
+            uczniowie: [ // ZMIANA: Usunięto atrybut "klasa"
+                { id: 1, imie: "Anna Kowalska", oceny: [], uwagi: [], frekwencja_tymczasowa: 'obecny' },
+                { id: 2, imie: "Piotr Nowak", oceny: [], uwagi: [], frekwencja_tymczasowa: 'obecny' },
+                { id: 3, imie: "Ewa Wiśniewska", oceny: [], uwagi: [], frekwencja_tymczasowa: 'obecny' }
+            ],
+            terminarz: [],
+            zadaniaDomowe: [],
+            ogloszenia: [],
+            rejestrZmian: []
+        };
+
+        let kalendarzStan = {
+            currentDate: new Date()
+        };
+        kalendarzStan.currentDate.setDate(1); // Ustawienie na pierwszy dzień miesiąca dla poprawnego widoku
+
+        // Ustawienie początkowej daty dla inputa
+        document.getElementById('frekwencja-data').value = new Date().toISOString().substring(0, 10);
+        document.getElementById('zadanie-termin').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
+
+        // ----------------------------------------------------
+        // FUNKCJE PODSTAWOWE (Dane i Zapis)
+        // ----------------------------------------------------
+        function wczytajDane() {
+            const zapisaneDane = localStorage.getItem(KLUCZ_DANYCH);
+            if (zapisaneDane) {
+                const wczytaneDane = JSON.parse(zapisaneDane);
+                
+                // Wczytanie stanów konfiguracyjnych
+                stanAplikacji.przedmioty = wczytaneDane.przedmioty || stanAplikacji.przedmioty;
+                stanAplikacji.dodatkoweStatusy = wczytaneDane.dodatkoweStatusy || stanAplikacji.dodatkoweStatusy;
+                stanAplikacji.typyOcen = wczytaneDane.typyOcen ? wczytaneDane.typyOcen.filter(t => t.label !== 'Poprawa').concat(stanAplikacji.typyOcen.find(t => t.label === 'Poprawa')) : stanAplikacji.typyOcen;
+                stanAplikacji.tematy = wczytaneDane.tematy || stanAplikacji.tematy.map(t => ({...t, przedmiot: t.przedmiot || stanAplikacji.obecnyPrzedmiot }));
+                stanAplikacji.obecnyPrzedmiot = wczytaneDane.obecnyPrzedmiot || stanAplikacji.obecnyPrzedmiot;
+                stanAplikacji.stanDziennika = wczytaneDane.stanDziennika || 0;
+
+                // Wczytanie danych dziennika (usunięcie "klasa" ze starych obiektów)
+                daneDziennika.uczniowie = (wczytaneDane.uczniowie || []).map(u => {
+                     const { klasa, ...reszta } = u; // Usuń klasa, jeśli istnieje
+                     return { 
+                         ...reszta, 
+                         oceny: reszta.oceny || [], 
+                         uwagi: reszta.uwagi || [],
+                         frekwencja_tymczasowa: reszta.frekwencja_tymczasowa || 'obecny'
+                     };
+                });
+                daneDziennika.terminarz = wczytaneDane.terminarz || [];
+                daneDziennika.zadaniaDomowe = wczytaneDane.zadaniaDomowe || [];
+                daneDziennika.ogloszenia = wczytaneDane.ogloszenia || [];
+                daneDziennika.rejestrZmian = wczytaneDane.rejestrZmian || [];
+            }
+        }
+
+        function zapiszDane() {
+            const daneDoZapisu = {
+                przedmioty: stanAplikacji.przedmioty,
+                dodatkoweStatusy: stanAplikacji.dodatkoweStatusy,
+                typyOcen: stanAplikacji.typyOcen,
+                tematy: stanAplikacji.tematy,
+                obecnyPrzedmiot: stanAplikacji.obecnyPrzedmiot,
+                stanDziennika: stanAplikacji.stanDziennika,
+                
+                uczniowie: daneDziennika.uczniowie,
+                terminarz: daneDziennika.terminarz,
+                zadaniaDomowe: daneDziennika.zadaniaDomowe,
+                ogloszenia: daneDziennika.ogloszenia,
+                rejestrZmian: daneDziennika.rejestrZmian
+            };
+            localStorage.setItem(KLUCZ_DANYCH, JSON.stringify(daneDoZapisu));
+        }
+        
+        // ----------------------------------------------------
+        // FUNKCJE POMOCNICZE
+        // ----------------------------------------------------
+        function generujNoweId(lista) {
+            if (lista.length === 0) return 1;
+            return Math.max(...lista.map(item => item.id)) + 1;
+        }
+
+        function znajdzUcznia(id) {
+            return daneDziennika.uczniowie.find(u => u.id === parseInt(id));
+        }
+
+        function znajdzPrzedmiot(id) {
+            return stanAplikacji.przedmioty.find(p => p.id === parseInt(id)) || stanAplikacji.przedmioty.find(p => p.nazwa === id);
+        }
+        
+        function znajdzTypOceny(id) {
+            return stanAplikacji.typyOcen.find(t => t.id === parseInt(id)) || stanAplikacji.typyOcen.find(t => t.label === id);
+        }
+        
+        function znajdzStatusDodatkowy(id) {
+            return stanAplikacji.dodatkoweStatusy.find(s => s.id === parseInt(id)); // Zmieniono, aby szukało tylko po ID
+        }
+        
+        function znajdzOpisStatusu(statusIdOrValue) {
+            // Szukanie w statusach podstawowych (value: 'obecny', 'nieobecny', etc.)
+            const podstawowy = PODSTAWOWE_STATUSY.find(s => s.value === statusIdOrValue);
+            if (podstawowy) {
+                 // Klasa dla wyświetlania w tabeli jest "attendance-wartosc_statusu"
+                 return { label: podstawowy.label, value: podstawowy.value, class: `attendance-${podstawowy.value}` }; 
+            }
+            
+            // Szukanie w statusach dodatkowych (value: ID, label: 'Na innym wydarzeniu', etc.)
+            const dodatkowy = znajdzStatusDodatkowy(parseInt(statusIdOrValue));
+            if (dodatkowy) {
+                 // Dla statusów dodatkowych używamy ogólnej klasy "dodatkowa" (niebieska)
+                 return { label: dodatkowy.label, value: dodatkowy.id, class: 'attendance-dodatkowa' };
+            }
+
+            // Domyślny stan
+            return { label: '?', value: 'nieznany', class: 'attendance-nieznany' };
+        }
+        
+        function znajdzUwage(id) {
+             // Wyszukiwanie uwagi w listach uwag wszystkich uczniów
+             for (const uczen of daneDziennika.uczniowie) {
+                 const uwaga = uczen.uwagi.find(u => u.id === parseInt(id));
+                 if (uwaga) return { uczen, uwaga };
+             }
+             return null;
+        }
+        
+        function znajdzOgloszenie(id) {
+            return daneDziennika.ogloszenia.find(o => o.id === parseInt(id));
+        }
+        
+        function znajdzZadanie(id) {
+            return daneDziennika.zadaniaDomowe.find(z => z.id === parseInt(id));
+        }
+
+        function znajdzTerminarz(id) {
+            return daneDziennika.terminarz.find(t => t.id === parseInt(id));
+        }
+        
+        function dodajDoRejestru(tresc) {
+             const nowyWpis = {
+                 id: generujNoweId(daneDziennika.rejestrZmian),
+                 data: new Date().toISOString().substring(0, 16).replace('T', ' '),
+                 tresc: tresc
+             };
+             daneDziennika.rejestrZmian.unshift(nowyWpis);
+             // Ograniczenie listy rejestru do 20 ostatnich wpisów
+             if (daneDziennika.rejestrZmian.length > 20) {
+                 daneDziennika.rejestrZmian = daneDziennika.rejestrZmian.slice(0, 20);
+             }
+             rysujRejestrZmian();
+             zapiszDane();
+        }
+
+        // ----------------------------------------------------
+        // LOGIKA STERUJĄCA WIDOKAMI (rysuj...)
+        // ----------------------------------------------------
+
+        function showTab(tabId) {
+            // Ukryj wszystkie zakładki
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            // Usuń aktywny stan z menu
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Pokaż wybraną zakładkę
+            const selectedTab = document.getElementById(tabId);
+            if (selectedTab) {
+                selectedTab.classList.remove('hidden');
+            }
+
+            // Ustaw aktywny stan w menu
+            const menuItem = document.querySelector(`.menu-item[data-tab="${tabId}"]`);
+            if (menuItem) {
+                menuItem.classList.add('active');
+            }
+
+            // Zaktualizuj nagłówek
+            document.getElementById('current-title').textContent = menuItem ? menuItem.querySelector('span').textContent : 'Dziennik Mobilny';
+
+            // Logika rysowania treści dla każdej zakładki
+            if (tabId === 'pulpit') {
+                rysujFrekwencje(); 
+            } else if (tabId === 'oceny') {
+                rysujTabeleOcen();
+            } else if (tabId === 'uwagi') {
+                rysujListeUwag(); 
+            } else if (tabId === 'sprawdziany') {
+                rysujKalendarzTerminarza();
+            } else if (tabId === 'ustawienia') {
+                rysujUstawienia(); 
+            } else if (tabId === 'tematy') {
+                rysujPuleTematow(); 
+            } else if (tabId === 'zadania') {
+                rysujListeZadanDomowych(); 
+            } else if (tabId === 'ogloszenia') {
+                rysujListeOgloszen(); 
+            }
+            
+            // Ponowne uruchomienie logiki dostępu, jeśli przechodzimy na Pulpit, aby zaktualizować przycisk
+            if (tabId === 'pulpit') {
+                aktualizujStanDostepu();
+            }
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // ----------------------------------------------------
+        // IMPLEMENTACJA FUNKCJONALNOŚCI (Frekwencja, Oceny, Uwagi, Ustawienia)
+        // ----------------------------------------------------
+
+        // --- FREKWENCJA (Pulpit) ---
+        function rysujFrekwencje() {
+             const body = document.getElementById('frekwencja-tabela-body');
+             body.innerHTML = ''; // Wyczyść poprzednie wpisy
+             
+             // Sortowanie uczniów alfabetycznie
+             const sortedUczniowie = daneDziennika.uczniowie.sort((a, b) => a.imie.localeCompare(b.imie));
+
+             if (sortedUczniowie.length === 0) {
+                 body.innerHTML = '<tr><td colspan="4">Brak uczniów. Dodaj uczniów w Ustawieniach.</td></tr>';
+                 return;
+             }
+
+             sortedUczniowie.forEach(uczen => {
+                 // Wypisz status frekwencji
+                 const status = znajdzOpisStatusu(uczen.frekwencja_tymczasowa); // Użycie nowej funkcji
+                 const statusDisplay = `<span class="attendance-status ${status.class}">${status.label}</span>`;
+                 
+                 // Przyciskowe opcje dla podstawowych statusów
+                 const podstawoweButtons = PODSTAWOWE_STATUSY.map(s => {
+                     const activeClass = uczen.frekwencja_tymczasowa === s.value ? 'active' : '';
+                     return `<button class="status-button ${s.class} ${activeClass}" 
+                                     onclick="zmienStatusFrekwencji(${uczen.id}, '${s.value}')" 
+                                     ${stanAplikacji.stanDziennika < 1 ? 'disabled' : ''}>${s.label}</button>`;
+                 }).join('');
+                 
+                 // Opcje dodatkowe (rozszerzalna lista statusów)
+                 // Używamy status.value jako aktualnie wybranej wartości dla porównania, ponieważ dla statusów dodatkowych jest to numeryczny ID
+                 const dodatkoweOptions = stanAplikacji.dodatkoweStatusy.map(s => `<option value="${s.id}" ${parseInt(uczen.frekwencja_tymczasowa) === s.id ? 'selected' : ''}>${s.label}</option>`).join('');
+                 const dodatkoweSelect = `
+                     <select onchange="zmienStatusFrekwencji(${uczen.id}, this.value)" 
+                             ${stanAplikacji.stanDziennika < 1 ? 'disabled' : ''}>
+                         <option value="">-- Wybierz inne --</option>
+                         ${dodatkoweOptions}
+                     </select>
+                 `;
+
+                 const row = `
+                     <tr>
+                         <td>${uczen.imie}</td>
+                         <td>${statusDisplay}</td>
+                         <td>${podstawoweButtons}</td>
+                         <td>${dodatkoweSelect}</td>
+                     </tr>
+                 `;
+                 body.innerHTML += row;
+             });
+             
+             // Uruchomienie kalendarza w tle (opcjonalnie)
+             if (document.getElementById('sprawdziany').classList.contains('hidden')) {
+                  rysujKalendarzTerminarza();
+             }
+        }
+        
+        function zmienStatusFrekwencji(uczenId, statusValue) {
+            const uczen = znajdzUcznia(uczenId);
+            if (!uczen) return;
+            
+            // Konwersja na string, aby utrzymać spójność w frekwencja_tymczasowa
+            uczen.frekwencja_tymczasowa = String(statusValue);
+            
+            dodajDoRejestru(`Uczeń ${uczen.imie}: Frekwencja zmieniona na ${znajdzOpisStatusu(uczen.frekwencja_tymczasowa).label}`);
+            rysujFrekwencje();
+            zapiszDane();
+        }
+
+        function handleDynamicAction() {
+            const przedmiotSelect = document.getElementById('frekwencja-przedmiot');
+            const dataInput = document.getElementById('frekwencja-data');
+            const tematSelect = document.getElementById('lekcja-temat-select');
+            const tematInput = document.getElementById('lekcja-temat-input');
+
+            if (stanAplikacji.stanDziennika === 0) {
+                // TRYB: Rozpocznij Lekcję
+                stanAplikacji.obecnyPrzedmiot = przedmiotSelect.value;
+                stanAplikacji.dataLekcji = dataInput.value;
+                stanAplikacji.tematLekcji = tematInput.value || tematSelect.value || '-- Brak tematu --';
+                stanAplikacji.stanDziennika = 1; // Zmieniono na frekwencję
+                
+                dodajDoRejestru(`Rozpoczęto Lekcję: ${stanAplikacji.obecnyPrzedmiot} - ${stanAplikacji.tematLekcji} (${stanAplikacji.dataLekcji})`);
+
+            } else if (stanAplikacji.stanDziennika === 1) {
+                // TRYB: Zapisz Frekwencję i Aktywuj Dziennik
+                stanAplikacji.stanDziennika = 2; // Zmieniono na aktywny
+                dodajDoRejestru(`Frekwencja zapisana. Dziennik aktywny.`);
+
+            } else if (stanAplikacji.stanDziennika === 2) {
+                // TRYB: Zakończ Lekcję
+                 // Zapisz ostateczną frekwencję do rejestru (opcjonalnie)
+                 const frekwencjaFinal = daneDziennika.uczniowie.map(u => u.imie + ': ' + znajdzOpisStatusu(u.frekwencja_tymczasowa).label).join(', ');
+
+                 dodajDoRejestru(`ZAKOŃCZONO LEKCJĘ. Frekwencja ostateczna: ${frekwencjaFinal.substring(0, 100)}...`);
+
+                 // Reset stanu
+                 stanAplikacji.stanDziennika = 0;
+                 stanAplikacji.obecnyPrzedmiot = przedmiotSelect.value;
+                 stanAplikacji.dataLekcji = null;
+                 stanAplikacji.tematLekcji = null;
+
+            }
+            aktualizujStanDostepu();
+            rysujFrekwencje();
+            zapiszDane();
+        }
+
+        function aktualizujStanDostepu() {
+            const btn = document.getElementById('dynamic-action-btn');
+            const frekwencjaArea = document.getElementById('frekwencja-area');
+            const przedmiotSelect = document.getElementById('frekwencja-przedmiot');
+            const dataInput = document.getElementById('frekwencja-data');
+            const tematSelect = document.getElementById('lekcja-temat-select');
+            const tematInput = document.getElementById('lekcja-temat-input');
+            const infoLekcja = document.getElementById('lekcja-info');
+            const infoTemat = document.getElementById('lekcja-temat-display');
+            
+            // Ustawienie listy przedmiotów dla 'Pulpitu'
+            renderPrzedmiotySelects();
+
+            // Ustawienie obecnej daty
+            if (!stanAplikacji.dataLekcji) {
+                 dataInput.value = new Date().toISOString().substring(0, 10);
+            }
+            
+            // Wizualne aktualizacje
+            if (stanAplikacji.stanDziennika === 0) {
+                // START
+                btn.textContent = 'Rozpocznij Lekcję i Wprowadź Frekwencję';
+                btn.style.backgroundColor = '#3498db';
+                frekwencjaArea.classList.add('hidden');
+                przedmiotSelect.disabled = false;
+                dataInput.disabled = false;
+                tematSelect.disabled = false;
+                tematInput.disabled = false;
+                infoLekcja.textContent = '-- Brak aktywnej lekcji --';
+                infoTemat.textContent = '';
+                // Reset tymczasowych statusów frekwencji do "obecny"
+                daneDziennika.uczniowie.forEach(u => u.frekwencja_tymczasowa = 'obecny'); 
+            } else if (stanAplikacji.stanDziennika === 1) {
+                // WPROWADZANIE FREKWENCJI
+                btn.textContent = 'Zapisz Frekwencję i Aktywuj Dziennik (Zacznij Stawiać Oceny)';
+                btn.style.backgroundColor = '#f39c12';
+                frekwencjaArea.classList.remove('hidden');
+                przedmiotSelect.disabled = true;
+                dataInput.disabled = true;
+                tematSelect.disabled = true;
+                tematInput.disabled = true;
+                infoLekcja.textContent = `${stanAplikacji.obecnyPrzedmiot} (${stanAplikacji.dataLekcji})`;
+                infoTemat.textContent = stanAplikacji.tematLekcji;
+
+            } else if (stanAplikacji.stanDziennika === 2) {
+                // DZIAŁANIE (OCENY/UWAGI)
+                btn.textContent = 'Zakończ Lekcję i Archiwizuj Dane';
+                btn.style.backgroundColor = '#e74c3c';
+                frekwencjaArea.classList.remove('hidden');
+                przedmiotSelect.disabled = true;
+                dataInput.disabled = true;
+                tematSelect.disabled = true;
+                tematInput.disabled = true;
+                infoLekcja.textContent = `${stanAplikacji.obecnyPrzedmiot} (${stanAplikacji.dataLekcji}) - AKTYWNA`;
+                infoTemat.textContent = stanAplikacji.tematLekcji;
+            }
+            
+            // Ustawienie aktywnego przedmiotu
+            if (stanAplikacji.obecnyPrzedmiot) {
+                przedmiotSelect.value = stanAplikacji.obecnyPrzedmiot;
+            }
+            
+            // Odświeżenie listy tematów po zmianie przedmiotu
+            filtrujTematyPoPrzedmiocie();
+            
+            // Ustawienie tematu w selekcie lub input
+            if (stanAplikacji.tematLekcji) {
+                 if (tematSelect.querySelector(`option[value="${stanAplikacji.tematLekcji}"]`)) {
+                      tematSelect.value = stanAplikacji.tematLekcji;
+                      tematInput.value = '';
+                 } else {
+                      tematInput.value = stanAplikacji.tematLekcji;
+                      tematSelect.value = '';
+                 }
+            } else {
+                 tematInput.value = '';
+                 tematSelect.value = '';
+            }
+        }
+        
+        function rysujRejestrZmian() {
+             const lista = document.getElementById('rejestr-zmian-lista');
+             lista.innerHTML = daneDziennika.rejestrZmian.map(wpis => 
+                 `<p style="margin: 3px 0; border-bottom: 1px dotted #eee; font-size: 0.85em;"><strong style="color: #7f8c8d;">[${wpis.data}]</strong> ${wpis.tresc}</p>`
+             ).join('');
+        }
+
+        // --- OCENY ---
+        function obliczSredniaOcen(oceny) {
+             const wagi = oceny.map(o => {
+                 const skala = SKALA_OCEN.find(s => s.value === o.ocenaWartosc);
+                 return skala ? skala.waga : 0;
+             }).filter(w => w > 0); // Filtrujemy np (waga 0)
+             
+             if (wagi.length === 0) return 'b/o';
+             
+             const suma = wagi.reduce((a, b) => a + b, 0);
+             const srednia = (suma / wagi.length).toFixed(2);
+             return isNaN(srednia) ? 'b/o' : srednia;
+        }
+
+        function rysujTabeleOcen() {
+             const body = document.getElementById('oceny-tabela-body');
+             body.innerHTML = ''; 
+             
+             const currentSubject = stanAplikacji.obecnyPrzedmiot;
+             document.getElementById('oceny-current-subject').textContent = currentSubject || "Wybierz na Pulpicie";
+
+             // Wypełnianie listy typów ocen dla inputa
+             const selectTyp = document.getElementById('ocena-typ');
+             selectTyp.innerHTML = stanAplikacji.typyOcen.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+             
+             const sortedUczniowie = daneDziennika.uczniowie.sort((a, b) => a.imie.localeCompare(b.imie));
+
+             if (sortedUczniowie.length === 0) {
+                 body.innerHTML = '<tr><td colspan="4">Brak uczniów. Dodaj uczniów w Ustawieniach.</td></tr>';
+                 return;
+             }
+
+             sortedUczniowie.forEach(uczen => {
+                 // Filtruj oceny dla bieżącego przedmiotu
+                 const ocenyPrzedmiotu = uczen.oceny.filter(o => o.przedmiot === currentSubject);
+                 
+                 // Oblicz średnią
+                 const srednia = obliczSredniaOcen(ocenyPrzedmiotu);
+                 
+                 // Wyświetl oceny
+                 const ocenyDisplay = ocenyPrzedmiotu.map(o => {
+                     const ocenaInfo = SKALA_OCEN.find(s => s.value === o.ocenaWartosc);
+                     const typOceny = znajdzTypOceny(o.typId);
+                     
+                     // Klasa CSS dla poprawionej oceny (na przyszłość)
+                     const poprawionaClass = o.poprawionaOcenaId ? 'poprawiona' : '';
+                     // Klasa CSS dla samej poprawy
+                     const jestPoprawaClass = o.isPoprawa ? 'jest-poprawa' : '';
+                     
+                     return `<span 
+                                 class="ocena-box ${poprawionaClass} ${jestPoprawaClass}" 
+                                 title="Typ: ${typOceny ? typOceny.label : 'Nieznany'} | Data: ${o.data}" 
+                                 onclick="otworzModalDodajOcene(${uczen.id}, ${o.id})">
+                                 ${ocenaInfo ? ocenaInfo.label : '?'}
+                             </span>`;
+                 }).join('');
+                 
+                 const row = `
+                     <tr>
+                         <td>${uczen.imie}</td>
+                         <td><strong>${srednia}</strong></td>
+                         <td>${ocenyDisplay}</td>
+                         <td>
+                             <button class="ocena-action-button" onclick="otworzModalDodajOcene(${uczen.id})" 
+                                 title="Dodaj Ocenę" ${stanAplikacji.stanDziennika < 2 ? 'disabled' : ''}>+</button>
+                             <button class="ocena-action-button poprawa" onclick="otworzModalDodajOcene(${uczen.id}, null, true)" 
+                                 title="Dodaj Poprawę" ${stanAplikacji.stanDziennika < 2 ? 'disabled' : ''}>P</button>
+                         </td>
+                     </tr>
+                 `;
+                 body.innerHTML += row;
+             });
+        }
+        
+        function otworzModalDodajOcene(uczenId, ocenaId = null, isPoprawaMode = false) {
+             if (stanAplikacji.stanDziennika < 2 && !ocenaId) {
+                  alert('Musisz rozpocząć i aktywować lekcję, aby dodawać oceny.');
+                  return;
+             }
+             
+             const uczen = znajdzUcznia(uczenId);
+             if (!uczen) return;
+             
+             const modal = document.getElementById('modal-dodaj-ocene');
+             document.getElementById('modal-uczen-imie').textContent = uczen.imie;
+             document.getElementById('modal-przedmiot-display').textContent = stanAplikacji.obecnyPrzedmiot;
+             document.getElementById('modal-uczen-id').value = uczenId;
+             document.getElementById('modal-ocena-id').value = ocenaId || '';
+             document.getElementById('modal-mode').value = isPoprawaMode ? 'poprawa' : (ocenaId ? 'edycja' : 'nowa');
+             
+             // Wypełnij select z ocenami (SKALA_OCEN)
+             const ocenaSelect = document.getElementById('modal-ocena-select');
+             ocenaSelect.innerHTML = SKALA_OCEN.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+             
+             // Wypełnij select z typami ocen
+             const typSelect = document.getElementById('modal-typ-select');
+             typSelect.innerHTML = stanAplikacji.typyOcen.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+             
+             const poprawaOptions = document.getElementById('poprawa-options');
+             const isPoprawaCheckbox = document.getElementById('modal-is-poprawa');
+             const deleteBtn = document.getElementById('modal-delete-button-ocena');
+
+             // Ustawienia dla trybów
+             poprawaOptions.classList.add('hidden');
+             deleteBtn.classList.add('hidden');
+             document.getElementById('modal-confirm-button').textContent = 'Zapisz Ocenę';
+             isPoprawaCheckbox.checked = false;
+             typSelect.disabled = false;
+             
+             if (ocenaId) {
+                 // Edycja oceny
+                 const ocena = uczen.oceny.find(o => o.id === parseInt(ocenaId));
+                 if (ocena) {
+                      ocenaSelect.value = ocena.ocenaWartosc;
+                      typSelect.value = ocena.typId;
+                      deleteBtn.classList.remove('hidden');
+                      document.getElementById('modal-title').textContent = 'Edytuj Ocenę';
+                      
+                      if (ocena.isPoprawa) {
+                           poprawaOptions.classList.remove('hidden');
+                           isPoprawaCheckbox.checked = true;
+                           typSelect.value = stanAplikacji.typyOcen.find(t => t.label === 'Poprawa').id; // Automatycznie ustaw typ na Poprawa
+                           typSelect.disabled = true;
+                      } else {
+                           typSelect.disabled = false;
+                      }
+                 }
+             } else if (isPoprawaMode) {
+                 // Dodawanie poprawy
+                 poprawaOptions.classList.remove('hidden');
+                 isPoprawaCheckbox.checked = true;
+                 typSelect.value = stanAplikacji.typyOcen.find(t => t.label === 'Poprawa').id;
+                 typSelect.disabled = true;
+                 document.getElementById('modal-title').textContent = 'Dodaj Ocenę Poprawiającą';
+
+             } else {
+                 // Nowa ocena
+                 document.getElementById('modal-title').textContent = 'Dodaj Nową Ocenę';
+                 typSelect.disabled = false;
+             }
+
+             modal.style.display = 'flex';
+        }
+
+        function potwierdzDodanieOceny() {
+            const uczenId = parseInt(document.getElementById('modal-uczen-id').value);
+            const ocenaId = document.getElementById('modal-ocena-id').value ? parseInt(document.getElementById('modal-ocena-id').value) : null;
+            const ocenaWartosc = parseFloat(document.getElementById('modal-ocena-select').value);
+            const typId = parseInt(document.getElementById('modal-typ-select').value);
+            const mode = document.getElementById('modal-mode').value;
+            const isPoprawa = document.getElementById('modal-is-poprawa').checked;
+            
+            const uczen = znajdzUcznia(uczenId);
+            if (!uczen) return;
+
+            if (mode === 'edycja') {
+                const ocena = uczen.oceny.find(o => o.id === ocenaId);
+                if (ocena) {
+                    const staraWartosc = SKALA_OCEN.find(s => s.value === ocena.ocenaWartosc).label;
+                    const nowaWartosc = SKALA_OCEN.find(s => s.value === ocenaWartosc).label;
+                    ocena.ocenaWartosc = ocenaWartosc;
+                    ocena.typId = typId;
+                    dodajDoRejestru(`Zmieniono ocenę dla ${uczen.imie}: z ${staraWartosc} na ${nowaWartosc} (${stanAplikacji.obecnyPrzedmiot})`);
+                }
+            } else {
+                // Nowa ocena lub Poprawa
+                const nowaOcena = {
+                    id: generujNoweId(uczen.oceny),
+                    ocenaWartosc: ocenaWartosc,
+                    typId: typId,
+                    przedmiot: stanAplikacji.obecnyPrzedmiot,
+                    data: new Date().toISOString().substring(0, 10),
+                    isPoprawa: isPoprawa,
+                    poprawionaOcenaId: null // Opcjonalnie, do zaimplementowania logiki łączenia w przyszłości
+                };
+                uczen.oceny.push(nowaOcena);
+                
+                const nowaWartoscLabel = SKALA_OCEN.find(s => s.value === ocenaWartosc).label;
+                const typOcenyLabel = znajdzTypOceny(typId).label;
+                dodajDoRejestru(`Dodano ocenę dla ${uczen.imie}: ${nowaWartoscLabel} (${typOcenyLabel}, ${stanAplikacji.obecnyPrzedmiot})`);
+            }
+
+            zapiszDane();
+            rysujTabeleOcen();
+            closeModal('modal-dodaj-ocene');
+        }
+
+        function usunOceneZModal() {
+            const uczenId = parseInt(document.getElementById('modal-uczen-id').value);
+            const ocenaId = parseInt(document.getElementById('modal-ocena-id').value);
+            
+            const uczen = znajdzUcznia(uczenId);
+            if (!uczen || !ocenaId || !confirm('Czy na pewno chcesz usunąć tę ocenę?')) return;
+            
+            const ocenaDoUsuniecia = uczen.oceny.find(o => o.id === ocenaId);
+            if (ocenaDoUsuniecia) {
+                const wartosc = SKALA_OCEN.find(s => s.value === ocenaDoUsuniecia.ocenaWartosc).label;
+                uczen.oceny = uczen.oceny.filter(o => o.id !== ocenaId);
+                dodajDoRejestru(`Usunięto ocenę dla ${uczen.imie}: ${wartosc} (${stanAplikacji.obecnyPrzedmiot})`);
+                zapiszDane();
+                rysujTabeleOcen();
+            }
+            closeModal('modal-dodaj-ocene');
+        }
+
+
+        // --- UWAGI ---
+        function rysujListeUwag() {
+            const lista = document.getElementById('lista-uwag');
+            lista.innerHTML = '';
+            
+            const wszystkieUwagi = [];
+            daneDziennika.uczniowie.forEach(uczen => {
+                uczen.uwagi.forEach(uwaga => {
+                    wszystkieUwagi.push({
+                        ...uwaga,
+                        uczenImie: uczen.imie,
+                        uczenId: uczen.id
+                    });
+                });
+            });
+            
+            wszystkieUwagi.sort((a, b) => new Date(b.data) - new Date(a.data));
+            
+            if (wszystkieUwagi.length === 0) {
+                 lista.innerHTML = '<p>Brak zapisanych uwag/pochwał.</p>';
+                 // Kontynuujemy, aby wypełnić selecta uczniów
+            } else {
+                lista.innerHTML = wszystkieUwagi.map(u => {
+                    const classColor = u.typ === 'Uwaga' ? 'background-color: #f7d794;' : (u.typ === 'Pochwała' ? 'background-color: #d1f7d4;' : 'background-color: #f0f0f0;');
+                    return `
+                        <div class="editable-list-item" style="${classColor}" onclick="otworzModalEdytujUwage(${u.id})">
+                            <strong>${u.uczenImie}</strong> (${u.typ}) - <span style="font-size: 0.9em; color: #777;">${u.data}</span>
+                            <p style="margin: 5px 0 0 0;">${u.opis}</p>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Wypełnienie selecta uczniów (FIX 2: Zapewnienie, że lista uczniów jest rysowana)
+            const uczenSelect = document.getElementById('uwaga-uczen');
+            uczenSelect.innerHTML = daneDziennika.uczniowie.sort((a, b) => a.imie.localeCompare(b.imie)).map(u => `<option value="${u.id}">${u.imie}</option>`).join('');
+        }
+        
+        function dodajUwage() {
+            const uczenId = parseInt(document.getElementById('uwaga-uczen').value);
+            const typ = document.getElementById('uwaga-typ').value;
+            const opis = document.getElementById('uwaga-opis').value.trim();
+            
+            const uczen = znajdzUcznia(uczenId);
+            
+            if (daneDziennika.uczniowie.length === 0) {
+                alert('Brak uczniów w systemie. Dodaj uczniów w Ustawieniach.');
+                return;
+            }
+            
+            if (!opis) {
+                alert('Wpisz treść wpisu.');
+                return;
+            }
+
+            const nowaUwaga = {
+                id: generujNoweId(uczen.uwagi),
+                typ: typ,
+                opis: opis,
+                data: new Date().toISOString().substring(0, 10)
+            };
+            
+            uczen.uwagi.push(nowaUwaga);
+            document.getElementById('uwaga-opis').value = '';
+            
+            dodajDoRejestru(`Dodano ${typ} dla ${uczen.imie}: ${opis.substring(0, 50)}...`);
+            zapiszDane();
+            rysujListeUwag(); // Odświeżenie listy
+        }
+
+        function otworzModalEdytujUwage(uwagaId) {
+             const result = znajdzUwage(uwagaId);
+             if (!result) return;
+
+             document.getElementById('modal-uwaga-id').value = result.uwaga.id;
+             document.getElementById('modal-uwaga-typ').value = result.uwaga.typ;
+             document.getElementById('modal-uwaga-opis').value = result.uwaga.opis;
+             document.getElementById('modal-uwaga-title').textContent = `Edytuj Wpis dla: ${result.uczen.imie}`;
+
+             document.getElementById('modal-edytuj-uwage').style.display = 'flex';
+        }
+        
+        function zapiszEdycjeUwagi() {
+            const uwagaId = parseInt(document.getElementById('modal-uwaga-id').value);
+            const typ = document.getElementById('modal-uwaga-typ').value;
+            const opis = document.getElementById('modal-uwaga-opis').value.trim();
+
+            const result = znajdzUwage(uwagaId);
+            if (!result) return;
+            
+            result.uwaga.typ = typ;
+            result.uwaga.opis = opis;
+            
+            dodajDoRejestru(`Edytowano wpis (${typ}) dla ${result.uczen.imie}.`);
+            zapiszDane();
+            rysujListeUwag();
+            closeModal('modal-edytuj-uwage');
+        }
+
+        function usunUwageZModal() {
+            const uwagaId = parseInt(document.getElementById('modal-uwaga-id').value);
+            const result = znajdzUwage(uwagaId);
+            
+            if (!result || !confirm('Czy na pewno chcesz usunąć ten wpis?')) return;
+            
+            result.uczen.uwagi = result.uczen.uwagi.filter(u => u.id !== uwagaId);
+            
+            dodajDoRejestru(`Usunięto wpis (${result.uwaga.typ}) dla ${result.uczen.imie}.`);
+            zapiszDane();
+            rysujListeUwag();
+            closeModal('modal-edytuj-uwage');
+        }
+
+        // --- TERMINARZ ---
+        const MONTH_NAMES = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
+        
+        function rysujKalendarzTerminarza() {
+             const view = document.getElementById('calendar-view');
+             const monthDisplay = document.getElementById('current-month-display');
+             view.innerHTML = '';
+             
+             const today = new Date();
+             const year = kalendarzStan.currentDate.getFullYear();
+             const month = kalendarzStan.currentDate.getMonth();
+             
+             monthDisplay.textContent = `${MONTH_NAMES[month]} ${year}`;
+             
+             // Dni tygodnia
+             const dayHeaders = ['Nd', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb'];
+             dayHeaders.forEach(day => {
+                 view.innerHTML += `<div class="day-header">${day}</div>`;
+             });
+             
+             const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 = Sunday, 1 = Monday...
+             const daysInMonth = new Date(year, month + 1, 0).getDate();
+             
+             // Wypełnianie pustych komórek (padding)
+             const startDay = firstDayOfMonth; 
+             for (let i = 0; i < startDay; i++) {
+                 view.innerHTML += `<div class="day-cell" style="background-color: #f0f0f0; cursor: default;"></div>`;
+             }
+             
+             // Rysowanie dni
+             for (let day = 1; day <= daysInMonth; day++) {
+                 const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                 const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+                 const eventsOnDay = daneDziennika.terminarz.filter(e => e.data === dateString);
+                 
+                 let eventHTML = '';
+                 eventsOnDay.forEach(e => {
+                     eventHTML += `<div class="terminarz-event" onclick="event.stopPropagation(); otworzModalEdytujTerminarz('${e.id}')">${e.tytul}</div>`;
+                 });
+
+                 view.innerHTML += `
+                     <div class="day-cell ${isToday ? 'day-today' : ''}" onclick="otworzModalDodajTerminarz('${dateString}')">
+                         <div class="day-number">${day}</div>
+                         ${eventHTML}
+                     </div>
+                 `;
+             }
+             
+             // Rysowanie listy
+             rysujListeTerminarz();
+        }
+        
+        function rysujListeTerminarz() {
+             const list = document.getElementById('terminarz-list-view');
+             list.innerHTML = '';
+             
+             const monthStart = new Date(kalendarzStan.currentDate.getFullYear(), kalendarzStan.currentDate.getMonth(), 1).toISOString().substring(0, 10);
+             const monthEnd = new Date(kalendarzStan.currentDate.getFullYear(), kalendarzStan.currentDate.getMonth() + 1, 0).toISOString().substring(0, 10);
+             
+             const filteredEvents = daneDziennika.terminarz.filter(e => e.data >= monthStart && e.data <= monthEnd);
+             
+             filteredEvents.sort((a, b) => new Date(a.data) - new Date(b.data));
+             
+             if (filteredEvents.length === 0) {
+                 list.innerHTML = '<p>Brak wydarzeń w tym miesiącu.</p>';
+                 return;
+             }
+             
+             list.innerHTML = filteredEvents.map(e => `
+                 <li class="terminarz-list-item" onclick="otworzModalEdytujTerminarz('${e.id}')">
+                     <strong>${e.data}</strong>: ${e.tytul} (${e.opis})
+                 </li>
+             `).join('');
+        }
+        
+        function changeMonth(delta) {
+            const currentMonth = kalendarzStan.currentDate.getMonth();
+            kalendarzStan.currentDate.setMonth(currentMonth + delta);
+            rysujKalendarzTerminarza();
+        }
+        
+        function zapiszTerminarzWydarzenie() {
+            const id = document.getElementById('modal-terminarz-id').value;
+            const data = document.getElementById('modal-terminarz-data').value;
+            const tytul = document.getElementById('modal-terminarz-przedmiot').value.trim();
+            const opis = document.getElementById('modal-terminarz-opis').value.trim();
+            
+            if (!data || !tytul) {
+                 alert('Uzupełnij datę i tytuł wydarzenia.');
+                 return;
+            }
+            
+            if (id) {
+                 // Edycja
+                 const wydarzenie = znajdzTerminarz(id);
+                 if (wydarzenie) {
+                      wydarzenie.data = data;
+                      wydarzenie.tytul = tytul;
+                      wydarzenie.opis = opis;
+                      dodajDoRejestru(`Zmieniono wydarzenie: ${tytul} (${data})`);
+                 }
+            } else {
+                 // Nowe
+                 daneDziennika.terminarz.push({
+                     id: generujNoweId(daneDziennika.terminarz),
+                     data: data,
+                     tytul: tytul,
+                     opis: opis
+                 });
+                 dodajDoRejestru(`Dodano wydarzenie do terminarza: ${tytul} (${data})`);
+            }
+            
+            zapiszDane();
+            rysujKalendarzTerminarza();
+            closeModal('modal-dodaj-terminarz');
+        }
+        
+        function usunTerminarzWydarzenie() {
+             const id = document.getElementById('modal-terminarz-id').value;
+             if (id && confirm('Czy na pewno chcesz usunąć to wydarzenie?')) {
+                 daneDziennika.terminarz = daneDziennika.terminarz.filter(e => e.id !== parseInt(id));
+                 dodajDoRejestru(`Usunięto wydarzenie z terminarza (ID: ${id})`);
+                 zapiszDane();
+                 rysujKalendarzTerminarza();
+                 closeModal('modal-dodaj-terminarz');
+             }
+        }
+
+        // --- ZADANIA DOMOWE ---
+        function rysujListeZadanDomowych() {
+            const lista = document.getElementById('lista-zadan-domowych');
+            lista.innerHTML = '';
+            
+            const today = new Date().toISOString().substring(0, 10);
+            
+            // Filtrujemy tylko zadania, których termin jeszcze nie minął
+            const aktualneZadania = daneDziennika.zadaniaDomowe.filter(z => z.termin >= today);
+            
+            aktualneZadania.sort((a, b) => a.termin.localeCompare(b.termin));
+
+            if (aktualneZadania.length === 0) {
+                 lista.innerHTML = '<p>Brak aktywnych zadań domowych.</p>';
+                 return;
+            }
+
+            lista.innerHTML = aktualneZadania.map(z => {
+                return `
+                    <li class="editable-list-item" onclick="otworzModalEdytujZadanie(${z.id})">
+                        <strong>${z.przedmiot}</strong> (Termin: ${z.termin})
+                        <p style="margin: 5px 0 0 0; font-size: 0.95em;">${z.opis}</p>
+                    </li>
+                `;
+            }).join('');
+            
+            // Wypełnienie selecta przedmiotów
+            const przedmiotSelect = document.getElementById('zadanie-przedmiot');
+            przedmiotSelect.innerHTML = stanAplikacji.przedmioty.map(p => `<option value="${p.nazwa}">${p.nazwa}</option>`).join('');
+        }
+        
+        function dodajZadanieDomowe() {
+            const przedmiot = document.getElementById('zadanie-przedmiot').value;
+            const termin = document.getElementById('zadanie-termin').value;
+            const opis = document.getElementById('zadanie-opis').value.trim();
+
+            if (!przedmiot || !termin || !opis) {
+                alert('Uzupełnij wszystkie pola.');
+                return;
+            }
+
+            daneDziennika.zadaniaDomowe.push({
+                id: generujNoweId(daneDziennika.zadaniaDomowe),
+                przedmiot: przedmiot,
+                termin: termin,
+                opis: opis
+            });
+            
+            document.getElementById('zadanie-opis').value = '';
+            
+            dodajDoRejestru(`Dodano zadanie domowe z ${przedmiot} na termin ${termin}.`);
+            zapiszDane();
+            rysujListeZadanDomowych();
+        }
+
+        // --- OGŁOSZENIA ---
+        function rysujListeOgloszen() {
+            const lista = document.getElementById('lista-ogloszen');
+            lista.innerHTML = '';
+            
+            daneDziennika.ogloszenia.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+            if (daneDziennika.ogloszenia.length === 0) {
+                 lista.innerHTML = '<p>Brak opublikowanych ogłoszeń.</p>';
+                 return;
+            }
+
+            lista.innerHTML = daneDziennika.ogloszenia.map(o => {
+                return `
+                    <div class="editable-list-item" onclick="otworzModalEdytujOgloszenie(${o.id})">
+                        <strong style="color: #3498db;">${o.tytul}</strong> <span style="font-size: 0.8em; color: #777;">(${o.data})</span>
+                        <p style="margin: 5px 0 0 0; font-size: 0.95em;">${o.tresc.substring(0, 150)}...</p>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function dodajOgloszenie() {
+            const tytul = document.getElementById('ogloszenie-tytul').value.trim();
+            const tresc = document.getElementById('ogloszenie-tresc').value.trim();
+
+            if (!tytul || !tresc) {
+                alert('Wypełnij tytuł i treść ogłoszenia.');
+                return;
+            }
+
+            daneDziennika.ogloszenia.push({
+                id: generujNoweId(daneDziennika.ogloszenia),
+                tytul: tytul,
+                tresc: tresc,
+                data: new Date().toISOString().substring(0, 10)
+            });
+
+            document.getElementById('ogloszenie-tytul').value = '';
+            document.getElementById('ogloszenie-tresc').value = '';
+
+            dodajDoRejestru(`Opublikowano nowe ogłoszenie: ${tytul}.`);
+            zapiszDane();
+            rysujListeOgloszen();
+        }
+        
+        function zapiszEdycjeOgloszenia() {
+            const id = parseInt(document.getElementById('modal-ogloszenie-id').value);
+            const tytul = document.getElementById('modal-ogloszenie-tytul').value.trim();
+            const tresc = document.getElementById('modal-ogloszenie-tresc').value.trim();
+            
+            const ogloszenie = znajdzOgloszenie(id);
+
+            if (ogloszenie) {
+                ogloszenie.tytul = tytul;
+                ogloszenie.tresc = tresc;
+                dodajDoRejestru(`Zmieniono ogłoszenie: ${tytul}`);
+                zapiszDane();
+                rysujListeOgloszen();
+                closeModal('modal-edytuj-ogloszenie');
+            }
+        }
+
+        function usunOgloszenieZModal() {
+             const id = parseInt(document.getElementById('modal-ogloszenie-id').value);
+             if (id && confirm('Czy na pewno chcesz usunąć to ogłoszenie?')) {
+                 daneDziennika.ogloszenia = daneDziennika.ogloszenia.filter(o => o.id !== id);
+                 dodajDoRejestru(`Usunięto ogłoszenie (ID: ${id})`);
+                 zapiszDane();
+                 rysujListeOgloszen();
+                 closeModal('modal-edytuj-ogloszenie');
+             }
+        }
+
+
+        // --- PULA TEMATÓW ---
+        function rysujPuleTematow() {
+             const lista = document.getElementById('tematy-lista');
+             lista.innerHTML = '';
+
+             stanAplikacji.tematy.sort((a, b) => a.label.localeCompare(b.label));
+
+             lista.innerHTML = stanAplikacji.tematy.map(t => `
+                 <li>
+                     <span>${t.label} (${t.przedmiot})</span>
+                     <button onclick="usunTemat(${t.id})">X</button>
+                 </li>
+             `).join('');
+             
+             // Wypełnienie selecta przedmiotów
+             const przedmiotSelect = document.getElementById('nowy-temat-przedmiot');
+             przedmiotSelect.innerHTML = stanAplikacji.przedmioty.map(p => `<option value="${p.nazwa}">${p.nazwa}</option>`).join('');
+             
+             // Dodatkowo odświeżenie selektów na pulpicie
+             filtrujTematyPoPrzedmiocie();
+        }
+        
+        function filtrujTematyPoPrzedmiocie() {
+             const przedmiot = document.getElementById('frekwencja-przedmiot').value;
+             const select = document.getElementById('lekcja-temat-select');
+             select.innerHTML = '<option value="">-- Wybierz lub wpisz --</option>';
+             
+             const filtered = stanAplikacji.tematy.filter(t => t.przedmiot === przedmiot);
+             
+             filtered.sort((a, b) => a.label.localeCompare(b.label));
+
+             filtered.forEach(t => {
+                 select.innerHTML += `<option value="${t.label}">${t.label}</option>`;
+             });
+        }
+        
+        function dodajNowyTemat() {
+             const input = document.getElementById('nowy-temat-input');
+             const przedmiotSelect = document.getElementById('nowy-temat-przedmiot');
+             const nowyTemat = input.value.trim();
+             const przedmiot = przedmiotSelect.value;
+             
+             if (nowyTemat && przedmiot) {
+                 stanAplikacji.tematy.push({
+                     id: generujNoweId(stanAplikacji.tematy),
+                     label: nowyTemat,
+                     przedmiot: przedmiot
+                 });
+                 input.value = '';
+                 rysujPuleTematow();
+                 zapiszDane();
+                 dodajDoRejestru(`Dodano temat do puli: ${nowyTemat} (${przedmiot})`);
+             }
+        }
+        
+        function usunTemat(id) {
+            stanAplikacji.tematy = stanAplikacji.tematy.filter(t => t.id !== id);
+            rysujPuleTematow();
+            zapiszDane();
+            dodajDoRejestru(`Usunięto temat z puli (ID: ${id})`);
+        }
+
+        // --- USTAWIENIA ---
+        function rysujUstawienia() {
+            // Uczniowie
+            const listaUczniowie = document.getElementById('uczniowie-lista');
+            listaUczniowie.innerHTML = daneDziennika.uczniowie.sort((a, b) => a.imie.localeCompare(b.imie)).map(u => `
+                <li>
+                    <span>${u.imie}</span>
+                    <button onclick="usunUcznia(${u.id})">Usuń</button>
+                </li>
+            `).join('');
+
+            // Przedmioty
+            const listaPrzedmioty = document.getElementById('przedmioty-lista');
+            listaPrzedmioty.innerHTML = stanAplikacji.przedmioty.sort((a, b) => a.nazwa.localeCompare(b.nazwa)).map(p => `
+                 <li>
+                     <span>${p.nazwa} (ID: ${p.id})</span>
+                     <button onclick="usunPrzedmiot(${p.id})">Usuń</button>
+                 </li>
+             `).join('');
+             
+            // Typy Ocen
+            const listaTypyOcen = document.getElementById('typy-ocen-lista');
+            listaTypyOcen.innerHTML = stanAplikacji.typyOcen.filter(t => t.label !== 'Poprawa').map(t => `
+                 <li>
+                     <span>${t.label} (ID: ${t.id})</span>
+                     <button onclick="usunTypOceny(${t.id})">Usuń</button>
+                 </li>
+             `).join('');
+             
+            // Dodatkowe Statusy
+            const listaStatusy = document.getElementById('dodatkowe-statusy-lista');
+            listaStatusy.innerHTML = stanAplikacji.dodatkoweStatusy.map(s => `
+                 <li>
+                     <span>${s.label} (ID: ${s.id})</span>
+                     <button onclick="usunDodatkowyStatus(${s.id})">Usuń</button>
+                 </li>
+             `).join('');
+
+             renderPrzedmiotySelects();
+        }
+        
+        function dodajPojedynczegoUcznia() {
+            const input = document.getElementById('nowy-uczen-imie');
+            const imie = input.value.trim();
+            if (imie) {
+                daneDziennika.uczniowie.push({
+                    id: generujNoweId(daneDziennika.uczniowie),
+                    imie: imie,
+                    oceny: [],
+                    uwagi: [],
+                    frekwencja_tymczasowa: 'obecny'
+                });
+                input.value = '';
+                rysujUstawienia();
+                zapiszDane();
+                dodajDoRejestru(`Dodano ucznia: ${imie}`);
+            }
+        }
+        
+        function dodajUczniowSeryjnie() {
+             const textarea = document.getElementById('nowi-uczniowie-seryjnie');
+             const lista = textarea.value.trim().split('\n').map(s => s.trim()).filter(s => s.length > 0);
+             
+             lista.forEach(imie => {
+                 daneDziennika.uczniowie.push({
+                     id: generujNoweId(daneDziennika.uczniowie),
+                     imie: imie,
+                     oceny: [],
+                     uwagi: [],
+                     frekwencja_tymczasowa: 'obecny'
+                 });
+             });
+             
+             textarea.value = '';
+             rysujUstawienia();
+             zapiszDane();
+             dodajDoRejestru(`Dodano ${lista.length} uczniów seryjnie.`);
+        }
+        
+        function usunUcznia(id) {
+            const uczen = znajdzUcznia(id);
+            if (!uczen || !confirm(`Czy na pewno usunąć ucznia ${uczen.imie} i wszystkie jego dane (oceny, uwagi, frekwencja)?`)) return;
+            
+            daneDziennika.uczniowie = daneDziennika.uczniowie.filter(u => u.id !== id);
+            rysujUstawienia();
+            rysujFrekwencje(); // Odświeżenie listy frekwencji
+            zapiszDane();
+            dodajDoRejestru(`Usunięto ucznia: ${uczen.imie}`);
+        }
+        
+        function dodajNowyPrzedmiot() {
+            const input = document.getElementById('nowy-przedmiot-nazwa');
+            const nazwa = input.value.trim();
+            if (nazwa) {
+                 stanAplikacji.przedmioty.push({
+                     id: generujNoweId(stanAplikacji.przedmioty),
+                     nazwa: nazwa
+                 });
+                 input.value = '';
+                 rysujUstawienia();
+                 zapiszDane();
+                 dodajDoRejestru(`Dodano przedmiot: ${nazwa}`);
+            }
+        }
+        
+        function usunPrzedmiot(id) {
+             const przedmiot = znajdzPrzedmiot(id);
+             if (!przedmiot || !confirm(`Czy na pewno usunąć przedmiot ${przedmiot.nazwa}? Spowoduje to usunięcie powiązanych tematów.`)) return;
+             
+             stanAplikacji.przedmioty = stanAplikacji.przedmioty.filter(p => p.id !== id);
+             // Usuń powiązane tematy z puli
+             stanAplikacji.tematy = stanAplikacji.tematy.filter(t => t.przedmiot !== przedmiot.nazwa);
+             
+             rysujUstawienia();
+             zapiszDane();
+             dodajDoRejestru(`Usunięto przedmiot: ${przedmiot.nazwa}`);
+        }
+        
+        function renderPrzedmiotySelects() {
+            const opcje = stanAplikacji.przedmioty.map(p => `<option value="${p.nazwa}">${p.nazwa}</option>`).join('');
+            
+            // Pulpit
+            const frekwencjaPrzedmiot = document.getElementById('frekwencja-przedmiot');
+            const obecnyWartosc = frekwencjaPrzedmiot.value || stanAplikacji.obecnyPrzedmiot;
+            frekwencjaPrzedmiot.innerHTML = opcje;
+            frekwencjaPrzedmiot.value = obecnyWartosc;
+            stanAplikacji.obecnyPrzedmiot = frekwencjaPrzedmiot.value;
+            
+            // Zadania Domowe
+            const zadaniePrzedmiot = document.getElementById('zadanie-przedmiot');
+            zadaniePrzedmiot.innerHTML = opcje;
+
+            // Pula Tematów
+            const nowyTematPrzedmiot = document.getElementById('nowy-temat-przedmiot');
+            nowyTematPrzedmiot.innerHTML = opcje;
+            
+            // Datalist dla terminarza
+            const datalist = document.getElementById('przedmioty-list');
+            datalist.innerHTML = stanAplikacji.przedmioty.map(p => `<option value="${p.nazwa}">`).join('');
+        }
+        
+        function dodajNowyTypOceny() {
+            const input = document.getElementById('nowy-typ-oceny-input');
+            const label = input.value.trim();
+            if (label) {
+                 stanAplikacji.typyOcen.push({
+                     id: generujNoweId(stanAplikacji.typyOcen),
+                     label: label
+                 });
+                 input.value = '';
+                 rysujUstawienia();
+                 zapiszDane();
+                 dodajDoRejestru(`Dodano typ oceny: ${label}`);
+            }
+        }
+        
+        function usunTypOceny(id) {
+             stanAplikacji.typyOcen = stanAplikacji.typyOcen.filter(t => t.id !== id);
+             rysujUstawienia();
+             zapiszDane();
+             dodajDoRejestru(`Usunięto typ oceny (ID: ${id})`);
+        }
+        
+        function dodajNowyStatus() {
+            const input = document.getElementById('nowy-status-input');
+            const label = input.value.trim();
+            if (label) {
+                 stanAplikacji.dodatkoweStatusy.push({
+                     id: generujNoweId(stanAplikacji.dodatkoweStatusy),
+                     label: label
+                 });
+                 input.value = '';
+                 rysujUstawienia();
+                 zapiszDane();
+                 dodajDoRejestru(`Dodano dodatkowy status frekwencji: ${label}`);
+            }
+        }
+        
+        function usunDodatkowyStatus(id) {
+            stanAplikacji.dodatkoweStatusy = stanAplikacji.dodatkoweStatusy.filter(s => s.id !== id);
+            rysujUstawienia();
+            zapiszDane();
+            dodajDoRejestru(`Usunięto dodatkowy status frekwencji (ID: ${id})`);
+        }
+
+        function wyczyscWszystkieDane() {
+            if (confirm("Jesteś pewien? Usuniesz WSZYSTKIE dane (uczniów, oceny, uwagi, terminy, konfigurację). TEJ OPERACJI NIE MOŻNA COFNĄĆ!")) {
+                 localStorage.removeItem(KLUCZ_DANYCH);
+                 window.location.reload(); // Najprostszy sposób na pełny reset stanu
+            }
+        }
+
+
+        // --- DUMMY FUNCTIONS (dla Terminarza/Zadań/Ogłoszeń, które otwierają modal w nowej funkcji) ---
+
+        function otworzModalDodajTerminarz(dateString) {
+            document.getElementById('modal-terminarz-id').value = '';
+            document.getElementById('modal-terminarz-data').value = dateString;
+            document.getElementById('modal-terminarz-data-display').textContent = dateString;
+            document.getElementById('modal-terminarz-przedmiot').value = stanAplikacji.obecnyPrzedmiot || 'Sprawdzian';
+            document.getElementById('modal-terminarz-opis').value = '';
+            document.getElementById('modal-terminarz-title').textContent = 'Dodaj Nowe Wydarzenie';
+            document.getElementById('terminarz-usun-btn').classList.add('hidden');
+            document.getElementById('terminarz-zapisz-btn').textContent = 'Zapisz Wydarzenie';
+
+            document.getElementById('modal-dodaj-terminarz').style.display = 'flex';
+        }
+        
+        function otworzModalEdytujTerminarz(id) {
+            const wydarzenie = znajdzTerminarz(id);
+            if (!wydarzenie) return;
+            
+            document.getElementById('modal-terminarz-id').value = wydarzenie.id;
+            document.getElementById('modal-terminarz-data').value = wydarzenie.data;
+            document.getElementById('modal-terminarz-data-display').textContent = wydarzenie.data;
+            document.getElementById('modal-terminarz-przedmiot').value = wydarzenie.tytul;
+            document.getElementById('modal-terminarz-opis').value = wydarzenie.opis;
+            document.getElementById('modal-terminarz-title').textContent = 'Edytuj Wydarzenie';
+            document.getElementById('terminarz-usun-btn').classList.remove('hidden');
+            document.getElementById('terminarz-zapisz-btn').textContent = 'Zapisz Zmiany';
+            
+            document.getElementById('modal-dodaj-terminarz').style.display = 'flex';
+        }
+        
+        function otworzModalEdytujOgloszenie(id) {
+             const ogloszenie = znajdzOgloszenie(id);
+             if (!ogloszenie) return;
+             
+             document.getElementById('modal-ogloszenie-id').value = ogloszenie.id;
+             document.getElementById('modal-ogloszenie-tytul').value = ogloszenie.tytul;
+             document.getElementById('modal-ogloszenie-tresc').value = ogloszenie.tresc;
+             
+             document.getElementById('modal-edytuj-ogloszenie').style.display = 'flex';
+        }
+        
+        function otworzModalEdytujZadanie(id) {
+            alert('Funkcja edycji Zadania Domowego (ID: ' + id + ') nie jest jeszcze w pełni zaimplementowana. Możesz ją usunąć lub dodać nowe.');
+            // Można tu dodać logikę usunięcia/edycji w modal
+        }
+
+        // ----------------------------------------------------
+        // INICJALIZACJA
+        // ----------------------------------------------------
+        function init() {
+            wczytajDane();
+            renderPrzedmiotySelects(); 
+            
+            aktualizujStanDostepu();
+            rysujPuleTematow();
+            rysujRejestrZmian();
+            
+            // Ustawienie początkowego wyświetlania informacji o lekcji
+            if (stanAplikacji.stanDziennika > 0) {
+                 document.getElementById('lekcja-info').textContent = `${stanAplikacji.obecnyPrzedmiot} (${stanAplikacji.dataLekcji})`;
+                 document.getElementById('lekcja-temat-display').textContent = stanAplikacji.tematLekcji;
+            } else {
+                 document.getElementById('lekcja-info').textContent = '-- Brak aktywnej lekcji --';
+                 document.getElementById('lekcja-temat-display').textContent = '';
+            }
+
+            showTab('pulpit'); 
+        }
+
+        // Uruchomienie aplikacji...
+        init();
+        
+    </script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect | System Zarządzania</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a; --accent: #6366f1; --bg: #f8fafc; --border: #e2e8f0; --white: #ffffff;
+        }
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s ease; }
+        body, html { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); }
+
+        /* LOGOWANIE */
+        #login-page {
+            height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        .login-box {
+            background: var(--white); padding: 40px; border-radius: 24px; width: 100%; max-width: 380px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); text-align: center;
+        }
+        .login-box h2 { margin-bottom: 25px; color: var(--primary); font-weight: 800; }
+        .login-box input {
+            width: 100%; padding: 14px; margin-bottom: 12px; border: 2px solid var(--border);
+            border-radius: 12px; outline: none; font-size: 1rem;
+        }
+        .login-box input:focus { border-color: var(--accent); }
+        .btn-blue {
+            width: 100%; padding: 14px; background: var(--accent); color: white; border: none;
+            border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem;
+        }
+
+        /* LAYOUT APLIKACJI */
+        .app-container { display: none; height: 100vh; flex-direction: row; }
+        .sidebar { width: 80px; background: var(--primary); display: flex; flex-direction: column; align-items: center; padding: 25px 0; gap: 20px; }
+        .nav-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b; padding: 10px; border-radius: 12px; }
+        .nav-btn.active { color: white; background: var(--accent); }
+        
+        .main-content { flex-grow: 1; padding: 40px; overflow-y: auto; }
+        .view { display: none; flex-direction: column; }
+        .view.active { display: flex; }
+
+        /* KARTY I FORMULARZE */
+        .card { background: var(--white); padding: 25px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        h1 { margin-top: 0; color: var(--primary); }
+        
+        .input-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        input, select, textarea { padding: 12px; border-radius: 10px; border: 1px solid var(--border); outline: none; width: 100%; }
+        input:focus { border-color: var(--accent); }
+
+        /* LISTY I WIADOMOŚCI */
+        .msg-row { background: white; padding: 20px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; }
+        .msg-row:hover { border-color: var(--accent); transform: translateX(5px); }
+        
+        .selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+        .pill { padding: 10px; border: 1px solid var(--border); border-radius: 10px; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.8rem; background: #f1f5f9; }
+        .pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; padding: 12px; color: #64748b; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGOWANIE -->
+    <div id="login-page">
+        <div class="login-box">
+            <h2>EduConnect</h2>
+            <input type="text" id="l-user" placeholder="Login">
+            <input type="password" id="l-pass" placeholder="Hasło">
+            <button class="btn-blue" onclick="app.login()">Zaloguj się</button>
+            <p id="l-err" style="color:red; display:none; margin-top:10px; font-size:0.8rem;">Błędne dane!</p>
+        </div>
+    </div>
+
+    <!-- APLIKACJA -->
+    <div id="app-container" class="app-container">
+        <nav class="sidebar">
+            <button class="nav-btn active" onclick="app.show('inbox')" id="m-inbox">📥</button>
+            <button class="nav-btn" onclick="app.show('sent')" id="m-sent">📤</button>
+            <button class="nav-btn" onclick="app.show('write')" id="m-write">✍️</button>
+            <button class="nav-btn admin-only" onclick="app.show('users')" id="m-users">👥</button>
+            <button class="nav-btn" onclick="location.reload()" style="margin-top:auto">🚪</button>
+        </nav>
+
+        <main class="main-content">
+            
+            <!-- WIDOK: ODEBRANE -->
+            <section id="v-inbox" class="view active">
+                <h1>Odebrane</h1>
+                <div id="list-inbox"></div>
+            </section>
+
+            <!-- WIDOK: WYSŁANE -->
+            <section id="v-sent" class="view">
+                <h1>Wysłane</h1>
+                <div id="list-sent"></div>
+            </section>
+
+            <!-- WIDOK: PISANIE -->
+            <section id="v-write" class="view">
+                <h1>Nowa wiadomość</h1>
+                <div id="admin-selector">
+                    <div class="card">
+                        <h3>1. Wybierz grupy:</h3>
+                        <div class="selection-grid" id="group-filter">
+                            <div class="pill" onclick="app.toggleFilter(this)" data-type="Klasa">Klasy</div>
+                            <div class="pill" onclick="app.toggleFilter(this)" data-type="Rodzic">Rodzice</div>
+                            <div class="pill" onclick="app.toggleFilter(this)" data-type="Uczen">Uczniowie</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>2. Adresaci:</h3>
+                        <div id="recipients-list" class="selection-grid"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <input type="text" id="m-subject" placeholder="Temat wiadomości" style="margin-bottom:10px">
+                    <textarea id="m-body" placeholder="Treść wiadomości..." style="height:150px; margin-bottom:10px"></textarea>
+                    <button class="btn-blue" style="width:auto; padding:12px 40px" onclick="app.send()">Wyślij wiadomość</button>
+                </div>
+            </section>
+
+            <!-- WIDOK: UŻYTKOWNICY -->
+            <section id="v-users" class="view">
+                <h1>Zarządzanie Klasami i Uczniami</h1>
+                <div class="card">
+                    <h3>Dodaj nową osobę do systemu</h3>
+                    <div class="input-group">
+                        <input type="text" id="u-name" placeholder="Imię i Nazwisko">
+                        <input type="text" id="u-class" placeholder="Klasa (np. 1A)">
+                        <select id="u-role"><option>Rodzic</option><option>Uczen</option></select>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="u-login" placeholder="Login">
+                        <input type="text" id="u-pass" placeholder="Hasło">
+                        <button class="btn-blue" onclick="app.addUser()">Dodaj do bazy</button>
+                    </div>
+                </div>
+                <div class="card" style="padding:0">
+                    <table id="table-users">
+                        <thead><tr><th>Imię i Nazwisko</th><th>Klasa</th><th>Rola</th><th>Login / Hasło</th><th>Akcja</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- WIDOK: SZCZEGÓŁY -->
+            <section id="v-details" class="view">
+                <button onclick="app.goBack()" style="border:none; background:none; color:var(--accent); cursor:pointer; font-weight:700; margin-bottom:20px">← Powrót</button>
+                <div class="card" id="msg-content"></div>
+            </section>
+
+        </main>
+    </div>
+
+<script>
+    const app = {
+        currentUser: null,
+        users: JSON.parse(localStorage.getItem('edu_db_users') || '[]'),
+        msgs: JSON.parse(localStorage.getItem('edu_db_msgs') || '[]'),
+        lastView: 'inbox',
+
+        init() {
+            const enter = (e) => e.key === "Enter" && this.login();
+            document.getElementById('l-user').addEventListener('keypress', enter);
+            document.getElementById('l-pass').addEventListener('keypress', enter);
+        },
+
+        login() {
+            const u = document.getElementById('l-user').value;
+            const p = document.getElementById('l-pass').value;
+            if(u === "7619801" && p === "Szymon") {
+                this.currentUser = { name: "Nauczyciel", role: "Admin", login: u };
+            } else {
+                const found = this.users.find(x => x.login === u && x.pass === p);
+                if(found) this.currentUser = found;
+            }
+
+            if(this.currentUser) {
+                document.getElementById('login-page').style.display = 'none';
+                document.getElementById('app-container').style.display = 'flex';
+                this.render();
+            } else { document.getElementById('l-err').style.display = 'block'; }
+        },
+
+        show(viewId) {
+            this.lastView = viewId;
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('v-' + viewId).classList.add('active');
+            document.getElementById('m-' + viewId).classList.add('active');
+            this.render();
+        },
+
+        goBack() { this.show(this.lastView); },
+
+        render() {
+            if(this.currentUser.role !== 'Admin') {
+                document.querySelectorAll('.admin-only').forEach(e => e.remove());
+                document.getElementById('admin-selector').classList.add('hidden');
+            }
+            this.renderInbox();
+            this.renderSent();
+            this.renderUsers();
+        },
+
+        addUser() {
+            const name = document.getElementById('u-name').value;
+            const cls = document.getElementById('u-class').value.toUpperCase();
+            const role = document.getElementById('u-role').value;
+            const login = document.getElementById('u-login').value;
+            const pass = document.getElementById('u-pass').value;
+
+            if(!name || !login) return alert("Wypełnij dane!");
+            this.users.push({ name, class: cls, role, login, pass });
+            localStorage.setItem('edu_db_users', JSON.stringify(this.users));
+            this.renderUsers();
+            ["u-name", "u-class", "u-login", "u-pass"].forEach(id => document.getElementById(id).value = "");
+        },
+
+        renderUsers() {
+            const tbody = document.querySelector('#table-users tbody');
+            tbody.innerHTML = this.users.map((u, i) => `
+                <tr>
+                    <td><b>${u.name}</b></td>
+                    <td>${u.class}</td>
+                    <td>${u.role}</td>
+                    <td><small>${u.login} / ${u.pass}</small></td>
+                    <td><button onclick="app.deleteUser(${i})" style="color:red; background:none; border:none; cursor:pointer">Usuń</button></td>
+                </tr>
+            `).join('');
+        },
+
+        deleteUser(i) { this.users.splice(i, 1); localStorage.setItem('edu_db_users', JSON.stringify(this.users)); this.renderUsers(); },
+
+        toggleFilter(el) { el.classList.toggle('active'); this.updateRecipients(); },
+
+        updateRecipients() {
+            const types = Array.from(document.querySelectorAll('#group-filter .active')).map(el => el.dataset.type);
+            const list = document.getElementById('recipients-list');
+            list.innerHTML = "";
+            
+            if(types.includes('Klasa')) {
+                const classes = [...new Set(this.users.map(u => u.class))].filter(c => c);
+                classes.forEach(c => list.innerHTML += `<div class="pill" onclick="this.classList.toggle('active')" data-val="${c}" data-target="klasa">Klasa ${c}</div>`);
+            }
+            this.users.forEach(u => {
+                if(types.includes(u.role)) list.innerHTML += `<div class="pill" onclick="this.classList.toggle('active')" data-val="${u.login}" data-target="osoba">${u.name}</div>`;
+            });
+        },
+
+        send() {
+            const sub = document.getElementById('m-subject').value;
+            const body = document.getElementById('m-body').value;
+            let targets = (this.currentUser.role === 'Admin') 
+                ? Array.from(document.querySelectorAll('#recipients-list .active')).map(el => ({ val: el.dataset.val, type: el.dataset.target, label: el.innerText }))
+                : [{ val: '7619801', type: 'admin', label: 'Nauczyciel' }];
+
+            if(!sub || targets.length === 0) return alert("Wybierz odbiorców i wpisz temat!");
+
+            this.msgs.push({ id: Date.now(), from: this.currentUser.name, fromLogin: this.currentUser.login, sub, body, targets, date: new Date().toLocaleString() });
+            localStorage.setItem('edu_db_msgs', JSON.stringify(this.msgs));
+            document.getElementById('m-subject').value = "";
+            document.getElementById('m-body').value = "";
+            this.show('sent');
+        },
+
+        renderInbox() {
+            const cont = document.getElementById('list-inbox');
+            const filtered = this.msgs.filter(m => {
+                if(this.currentUser.role === 'Admin') return m.targets.some(t => t.type === 'admin');
+                return m.targets.some(t => (t.type === 'osoba' && t.val === this.currentUser.login) || (t.type === 'klasa' && t.val === this.currentUser.class));
+            });
+            cont.innerHTML = filtered.reverse().map(m => `
+                <div class="msg-row" onclick="app.open(${m.id})">
+                    <div><b>${m.from}</b><br><small>${m.sub}</small></div>
+                    <div style="font-size:0.7rem; color:#94a3b8">${m.date}</div>
+                </div>
+            `).join('') || "Brak wiadomości";
+        },
+
+        renderSent() {
+            const cont = document.getElementById('list-sent');
+            const filtered = this.msgs.filter(m => m.fromLogin === this.currentUser.login);
+            cont.innerHTML = filtered.reverse().map(m => `
+                <div class="msg-row" onclick="app.open(${m.id})">
+                    <div><b>Do: ${m.targets.length} adresatów</b><br><small>${m.sub}</small></div>
+                    <div style="font-size:0.7rem; color:#94a3b8">${m.date}</div>
+                </div>
+            `).join('') || "Nic nie wysłano";
+        },
+
+        open(id) {
+            const m = this.msgs.find(x => x.id === id);
+            document.getElementById('msg-content').innerHTML = `
+                <h2 style="margin-top:0">${m.sub}</h2>
+                <p><small>Od: ${m.from} | Data: ${m.date}</small></p>
+                <hr style="border:0; border-top:1px solid var(--border); margin:20px 0">
+                <div style="white-space:pre-wrap; line-height:1.6">${m.body}</div>
+            `;
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('v-details').classList.add('active');
+        }
+    };
+
+    app.init();
+</script>
+</body>
+</html>
